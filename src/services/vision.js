@@ -1,3 +1,5 @@
+console.log("ENV VALUE:", process.env.GOOGLE_CREDENTIALS_BASE64);
+console.log("ENV EXISTS:", !!process.env.GOOGLE_CREDENTIALS_BASE64);
 const vision = require('@google-cloud/vision');
 
 const client = new vision.ImageAnnotatorClient({
