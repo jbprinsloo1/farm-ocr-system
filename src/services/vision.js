@@ -1,6 +1,8 @@
 const vision = require('@google-cloud/vision');
 
-const client = new vision.ImageAnnotatorClient();
+const client = new vision.ImageAnnotatorClient({
+  credentials: JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON)
+});
 
 module.exports = {
   async extractText(filePath) {
