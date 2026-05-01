@@ -1,0 +1,23 @@
+
+console.log("🔥 THIS SERVER IS RUNNING");require('dotenv').config();
+const express = require('express');
+const path = require('path');
+const scanRoutes = require('./routes/scan');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use('/api', scanRoutes);
+
+// DEBUG ROUTE
+app.get('/', (req, res) => {
+  console.log('ROOT HIT');
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Farm OCR System listening at http://0.0.0.0:${PORT}`);
+});
