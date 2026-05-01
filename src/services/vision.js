@@ -16,3 +16,4 @@ module.exports = {
     return detections[0].description || '';
   }
 };
+
