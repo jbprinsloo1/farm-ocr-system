@@ -1,7 +1,11 @@
 const { google } = require('googleapis');
 
+const credentials = JSON.parse(
+  Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString('utf8')
+);
+
 const auth = new google.auth.GoogleAuth({
-  keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  credentials,
   scopes: ['https://www.googleapis.com/auth/spreadsheets']
 });
 
@@ -13,15 +17,15 @@ module.exports = async function saveToSheet(data) {
   const range = "'sen wes vrag'!A:I";
 
   const values = [[
-    data.datum || '',         // Datum
-    data.tyd || '',           // tyd
-    data.materiaal || '',     // Produk
-    data.afleweringNo || '',  // Vrag brief no
-    data.vog || '',           // vog
-    data.finaleGraad || '',   // graad
-    data.nettoMassa || '',    // netto gewig
-    data.voertuigReg || '',   // Nommer plaat
-    data.land || ''           // land
+    data.datum || '',
+    data.tyd || '',
+    data.materiaal || '',
+    data.afleweringNo || '',
+    data.vog || '',
+    data.finaleGraad || '',
+    data.nettoMassa || '',
+    data.voertuigReg || '',
+    data.land || ''
   ]];
 
   await sheets.spreadsheets.values.append({
