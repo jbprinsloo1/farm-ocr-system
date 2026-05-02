@@ -5,7 +5,8 @@ const scanRoutes = require('./routes/scan');
 
 const app = express();
 const PORT = 3001;
-
+const dashboardRoute = require('./routes/dashboard');
+app.use('/api/dashboard', dashboardRoute);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
