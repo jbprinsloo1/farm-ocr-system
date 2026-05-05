@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bees minus</title>
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:16px}
+.card{background:white;padding:16px;border-radius:14px}
+input,select,button{width:100%;padding:14px;margin:8px 0;font-size:18px}
+button{background:#222;color:white;border:0;border-radius:10px}
+</style>
+</head>
+<body>
+
+<a href="/">⬅ Home</a>
+
+<div class="card">
+<h2>🐄 Bees minus</h2>
+
+<input id="date" type="date">
+
+<select id="wat">
+<option>Dood</option>
+<option>Verkoop</option>
+</select>
+
+<input id="beesNr" type="text" placeholder="Bees nr">
+
+<button onclick="save()">Save</button>
+
+<p id="msg"></p>
+</div>
+
+<script>
+date.value = new Date().toISOString().split('T')[0];
+
+async function save(){
+  msg.textContent='Saving...';
+
+  const res = await fetch('/api/bees-minus',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      date:date.value,
+      wat:wat.value,
+      beesNr:beesNr.value
+    })
+  });
+
+  if(res.ok){
+    msg.textContent='✅ Saved';
+    beesNr.value='';
+  }else{
+    msg.textContent='❌ Error saving';
+  }
+}
+</script>
+
+</body>
+</html>

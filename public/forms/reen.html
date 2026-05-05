@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reën</title>
+</head>
+<body>
+
+<h2>🌧️ Reën</h2>
+
+<input id="date" type="date"><br><br>
+<input id="hoeveel" type="number" placeholder="mm"><br><br>
+
+<select id="waar">
+<option>Boomplaas</option>
+<option>Uitkoms</option>
+<option>Verblyden wes</option>
+<option>Verblyden oos</option>
+<option>Skoolspruit</option>
+<option>Doornpoort stoor</option>
+<option>Doornpoort huis</option>
+<option>Welverdient</option>
+<option>Rooibloem</option>
+</select><br><br>
+
+<button onclick="save()">Save</button>
+
+<p id="msg"></p>
+
+<script>
+date.value = new Date().toISOString().split('T')[0];
+
+async function save(){
+  msg.textContent='Saving...';
+
+  const res = await fetch('/api/reen',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      date:date.value,
+      hoeveel:hoeveel.value,
+      waar:waar.value
+    })
+  });
+
+  msg.textContent = res.ok ? '✅ Saved' : '❌ Error';
+}
+</script>
+
+</body>
+</html>

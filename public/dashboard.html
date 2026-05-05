@@ -1,59 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Farm OCR Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: Arial, sans-serif; padding: 16px; background: #f5f5f5; }
-    .card { background: white; padding: 16px; margin-bottom: 12px; border-radius: 10px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    table { width: 100%; border-collapse: collapse; background: white; }
-    th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
-    th { background: #eee; }
-    a { display: inline-block; margin-bottom: 16px; }
-  </style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard</title>
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:16px}
+.card{background:#fff;padding:16px;margin:10px 0;border-radius:10px}
+.num{font-size:30px;font-weight:bold}
+.good{border-left:6px solid green}
+.mid{border-left:6px solid orange}
+.bad{border-left:6px solid red}
+.cow{background:#eee;padding:6px;margin:4px;border-radius:6px;display:inline-block}
+</style>
 </head>
 <body>
-  <a href="/">← Back to Scan</a>
-  <h2>Farm OCR Dashboard</h2>
 
-  <div class="grid">
-    <div class="card"><b>Total Loads</b><h2 id="loads">...</h2></div>
-    <div class="card"><b>Total Tons</b><h2 id="weight">...</h2></div>
-    <div class="card"><b>Avg Moisture</b><h2 id="moisture">...</h2></div>
-  </div>
+<h2>🐄 Cow Productivity</h2>
 
-  <h3>Tons per Land</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Land</th>
-        <th>Loads</th>
-        <th>Tons</th>
-      </tr>
-    </thead>
-    <tbody id="landRows"></tbody>
-  </table>
+<div class="card good">
+<div id="p" class="num">0</div>Productive
+</div>
 
-  <script>
-    async function loadDashboard() {
-      const res = await fetch('/api/dashboard');
-      const data = await res.json();
+<div class="card mid">
+<div id="m" class="num">0</div>Moderate
+</div>
 
-      document.getElementById('loads').textContent = data.totalLoads;
-      document.getElementById('weight').textContent = data.totalWeight + ' t';
-      document.getElementById('moisture').textContent = data.averageMoisture + '%';
+<div class="card bad">
+<div id="u" class="num">0</div>Unproductive
+</div>
 
-      document.getElementById('landRows').innerHTML = data.byLand.map(row => `
-        <tr>
-          <td>${row.land}</td>
-          <td>${row.loads}</td>
-          <td>${Number(row.weight).toFixed(3)}</td>
-        </tr>
-      `).join('');
-    }
+<h3>Never calved</h3>
+<div id="never"></div>
+<h3>Late calvers</h3>
+<div id="late"></div>
 
-    loadDashboard();
-  </script>
+<script>
+fetch('/api/cow-productivity')
+.then(r=>r.json())
+.then(d=>{
+p.textContent=d.productive;
+m.textContent=d.moderate;
+u.textContent=d.unproductive;
+
+never.innerHTML=d.list
+.filter(x=>x.status==='never')
+.map(x=>`<span class="cow">${x.cow}</span>`)
+.join('');
+
+late.innerHTML=d.list
+.filter(x=>x.status==='late')
+.map(x=>`<div>${x.cow} - ${x.months} months</div>`)
+.join('');
+});
+</script>
+
 </body>
 </html>

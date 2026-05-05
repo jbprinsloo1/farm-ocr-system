@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ander</title>
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:16px}
+.card{background:white;padding:16px;border-radius:14px}
+input,textarea,button{width:100%;padding:14px;margin:8px 0;font-size:18px}
+button{background:#222;color:white;border:0;border-radius:10px}
+</style>
+</head>
+<body>
+
+<a href="/">⬅ Home</a>
+
+<div class="card">
+<h2>📝 Ander</h2>
+
+<input id="date" type="datetime-local">
+<textarea id="wat" placeholder="Wat"></textarea>
+<input id="waar" type="text" placeholder="Waar">
+<input id="hoe" type="text" placeholder="Hoe">
+<input id="wie" type="text" placeholder="Wie">
+<input id="aa" type="text" placeholder="Aa">
+<input id="ab" type="text" placeholder="Ab">
+
+<button onclick="save()">Save</button>
+
+<p id="msg"></p>
+</div>
+
+<script>
+const now = new Date();
+now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+date.value = now.toISOString().slice(0,16);
+
+async function save(){
+  msg.textContent='Saving...';
+
+  const res = await fetch('/api/ander',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      date:date.value,
+      wat:wat.value,
+      waar:waar.value,
+      hoe:hoe.value,
+      wie:wie.value,
+      aa:aa.value,
+      ab:ab.value
+    })
+  });
+
+  if(res.ok){
+    msg.textContent='✅ Saved';
+    wat.value='';
+    waar.value='';
+    hoe.value='';
+    wie.value='';
+    aa.value='';
+    ab.value='';
+  }else{
+    msg.textContent='❌ Error saving';
+  }
+}
+</script>
+
+</body>
+</html>

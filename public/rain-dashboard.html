@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rainfall Dashboard</title>
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:16px}
+.card{background:white;padding:16px;margin:12px 0;border-radius:12px}
+a{display:block;margin-bottom:12px}
+.chart{display:flex;align-items:flex-end;gap:8px;height:260px;border-left:1px solid #ccc;border-bottom:1px solid #ccc;padding:10px;overflow-x:auto}
+.barWrap{text-align:center;min-width:45px}
+.bar{background:#3498db;width:32px;margin:auto;border-radius:6px 6px 0 0;color:white;font-size:11px;display:flex;align-items:flex-start;justify-content:center;padding-top:4px}
+.month{font-size:12px;margin-top:6px}
+.row{padding:8px;border-bottom:1px solid #ddd}
+</style>
+</head>
+<body>
+<a href="/">⬅ Home</a>
+<h2>🌧️ Rainfall Dashboard</h2>
+
+<div class="card">
+<h3>Boomplaas monthly rainfall</h3>
+<div id="monthly" class="chart">Loading...</div>
+</div>
+
+<div class="card">
+<h3>Total per farm</h3>
+<div id="farms">Loading...</div>
+</div>
+
+<script>
+const monthNames = {
+  "09":"Sep","10":"Oct","11":"Nov","12":"Dec",
+  "01":"Jan","02":"Feb","03":"Mar","04":"Apr",
+  "05":"May","06":"Jun","07":"Jul","08":"Aug"
+};
+
+fetch('/api/rainfall')
+.then(r=>r.json())
+.then(d=>{
+  const order = ["09","10","11","12","01","02","03","04","05","06","07","08"];
+
+  const monthlyMap = {};
+  d.monthly.forEach(x=>{
+    const m = x.month.slice(-2);
+    monthlyMap[m] = x.total;
+  });
+
+  const maxM = Math.max(...Object.values(monthlyMap),1);
+
+  monthly.innerHTML = order.map(m=>{
+    const total = monthlyMap[m] || 0;
+    const height = Math.max((total/maxM)*220, total>0 ? 18 : 2);
+    return `
+      <div class="barWrap">
+        <div class="bar" style="height:${height}px">${total ? total.toFixed(0) : ''}</div>
+        <div class="month">${monthNames[m]}</div>
+      </div>
+    `;
+  }).join('');
+
+  farms.innerHTML = d.farms
+    .sort((a,b)=>b.total-a.total)
+    .map(x=>`<div class="row"><b>${x.farm}</b>: ${x.total.toFixed(1)} mm</div>`)
+    .join('');
+});
+</script>
+</body>
+</html>

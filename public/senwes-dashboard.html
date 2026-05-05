@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Senwes Dashboard</title>
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:16px}
+.card{background:white;padding:16px;margin:12px 0;border-radius:12px}
+.big{font-size:34px;font-weight:bold}
+.row{padding:8px;border-bottom:1px solid #ddd}
+.bar{background:#ddd;border-radius:8px;margin:6px 0}
+.fill{background:#27ae60;color:white;padding:7px;border-radius:8px}
+input,button{width:100%;padding:14px;margin:8px 0;font-size:18px}
+button{background:#222;color:white;border:0;border-radius:10px}
+a{display:block;margin-bottom:12px}
+</style>
+</head>
+<body>
+<a href="/">⬅ Home</a>
+<h2>🌾 Senwes Dashboard</h2>
+
+<div id="login" class="card">
+<h3>Password</h3>
+<input id="pin" type="password" placeholder="Enter password">
+<button onclick="loadDash()">Open dashboard</button>
+<p id="loginMsg"></p>
+</div>
+
+<div id="dash" style="display:none">
+<div class="card">
+<h3>Total delivered</h3>
+<div id="total" class="big">Loading...</div>
+</div>
+
+<div class="card">
+<h3>Average moisture</h3>
+<div id="moisture" class="big">Loading...</div>
+</div>
+
+<div class="card">
+<h3>Tonnes per land</h3>
+<div id="land">Loading...</div>
+</div>
+
+<div class="card">
+<h3>Tonnes per product</h3>
+<div id="product">Loading...</div>
+</div>
+
+<div class="card">
+<h3>Grade summary</h3>
+<div id="grade">Loading...</div>
+</div>
+</div>
+
+<script>
+function renderBars(el, arr){
+  const max = Math.max(...arr.map(x=>x.tonnes),1);
+  el.innerHTML = arr
+    .sort((a,b)=>b.tonnes-a.tonnes)
+    .map(x=>`
+      <div class="row">
+        <b>${x.name}</b>: ${x.tonnes.toFixed(3)} t
+        <div class="bar">
+          <div class="fill" style="width:${(x.tonnes/max)*100}%">${x.tonnes.toFixed(2)}</div>
+        </div>
+      </div>
+    `).join('');
+}
+
+async function loadDash(){
+  loginMsg.textContent = 'Loading...';
+
+  const res = await fetch('/api/senwes-dashboard?pin=' + encodeURIComponent(pin.value));
+  const d = await res.json();
+
+  if(!res.ok){
+    loginMsg.textContent = '❌ Wrong password';
+    return;
+  }
+
+  login.style.display = 'none';
+  dash.style.display = 'block';
+
+  total.textContent = d.totalTonnes.toFixed(3) + ' t';
+  moisture.textContent = d.averageMoisture.toFixed(2) + ' %';
+  renderBars(land, d.byLand);
+  renderBars(product, d.byProduct);
+  renderBars(grade, d.byGrade);
+}
+</script>
+</body>
+</html>
