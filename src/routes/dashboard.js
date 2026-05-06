@@ -12,56 +12,66 @@ const auth = new google.auth.GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
 });
 
+const spreadsheetId = '1wZeoBLAAlK9S6Dl-2PAttNfjN2IbO2jnXrKc7Q29Ycc';
+
+async function getSheet(sheets, name) {
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `'${name}'!A:Z`
+  });
+
+  return res.data.values || [];
+}
+
 router.get('/', async (req, res) => {
   try {
     const client = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: client });
 
-    const spreadsheetId = '1wZeoBLAAlK9S6Dl-2PAttNfjN2IbO2jnXrKc7Q29Ycc';
-    const range = "'sen wes vrag'!A:I";
+    const cowId = String(req.query.cowId || '').trim();
 
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range
+    if (!cowId) {
+      return res.json({
+        ok: true,
+        message: 'Provide cowId'
+      });
+    }
+
+    const inventory = await getSheet(sheets, 'Bees Inventaris');
+    const beesPlus = await getSheet(sheets, 'Bees plus');
+    const beesMinus = await getSheet(sheets, 'Bees minus');
+    const kalfMerk = await getSheet(sheets, 'Kalf merk');
+
+    const inventoryMatches = inventory.filter((row, i) => {
+      if (i === 0) return false;
+      return String(row.join(' ')).includes(cowId);
     });
 
-    const rows = response.data.values || [];
-    const dataRows = rows.slice(1);
+    const plusMatches = beesPlus.filter((row, i) => {
+      if (i === 0) return false;
+      return String(row[2] || '').trim() === cowId;
+    });
 
-    let totalLoads = 0;
-    let totalWeight = 0;
-    let moistureSum = 0;
-    let moistureCount = 0;
+    const minusMatches = beesMinus.filter((row, i) => {
+      if (i === 0) return false;
+      return String(row[2] || '').trim() === cowId;
+    });
 
-    const byLand = {};
-
-    dataRows.forEach(row => {
-      const land = row[8] || 'Unknown';
-      const weight = parseFloat(row[6]) || 0;
-      const moisture = parseFloat(row[4]) || 0;
-
-      totalLoads += 1;
-      totalWeight += weight;
-
-      if (moisture) {
-        moistureSum += moisture;
-        moistureCount += 1;
-      }
-
-      if (!byLand[land]) {
-        byLand[land] = { land, loads: 0, weight: 0 };
-      }
-
-      byLand[land].loads += 1;
-      byLand[land].weight += weight;
+    const kalfMatches = kalfMerk.filter((row, i) => {
+      if (i === 0) return false;
+      return String(row[1] || '').trim() === cowId;
     });
 
     res.json({
-      totalLoads,
-      totalWeight: totalWeight.toFixed(3),
-      averageMoisture: moistureCount ? (moistureSum / moistureCount).toFixed(2) : '0',
-      byLand: Object.values(byLand).sort((a, b) => b.weight - a.weight)
+      ok: true,
+      cowId,
+      inInventory: inventoryMatches.length > 0,
+      inventory: inventoryMatches,
+      beesPlus: plusMatches,
+      beesMinus: minusMatches,
+      kalfMerk: kalfMatches
     });
+
   } catch (err) {
     console.error('Dashboard error:', err);
     res.status(500).json({ error: err.message });

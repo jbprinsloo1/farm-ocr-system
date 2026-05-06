@@ -1,57 +1,72 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dashboard</title>
+<meta charset="UTF-8">
+<title>Cow Lookup</title>
 <style>
-body{font-family:Arial;background:#f4f6f8;padding:16px}
-.card{background:#fff;padding:16px;margin:10px 0;border-radius:10px}
-.num{font-size:30px;font-weight:bold}
-.good{border-left:6px solid green}
-.mid{border-left:6px solid orange}
-.bad{border-left:6px solid red}
-.cow{background:#eee;padding:6px;margin:4px;border-radius:6px;display:inline-block}
+body{
+  font-family:Arial;
+  max-width:900px;
+  margin:auto;
+  padding:20px;
+}
+input,button{
+  padding:10px;
+  font-size:16px;
+}
+.card{
+  border:1px solid #ccc;
+  border-radius:8px;
+  padding:15px;
+  margin-top:15px;
+}
+pre{
+  white-space:pre-wrap;
+}
 </style>
 </head>
 <body>
 
-<h2>🐄 Cow Productivity</h2>
+<h2>🐄 Cow Lookup</h2>
 
-<div class="card good">
-<div id="p" class="num">0</div>Productive
-</div>
+<input id="cowId" placeholder="Enter cow number">
+<button onclick="lookup()">Search</button>
 
-<div class="card mid">
-<div id="m" class="num">0</div>Moderate
-</div>
-
-<div class="card bad">
-<div id="u" class="num">0</div>Unproductive
-</div>
-
-<h3>Never calved</h3>
-<div id="never"></div>
-<h3>Late calvers</h3>
-<div id="late"></div>
+<div id="result"></div>
 
 <script>
-fetch('/api/cow-productivity')
-.then(r=>r.json())
-.then(d=>{
-p.textContent=d.productive;
-m.textContent=d.moderate;
-u.textContent=d.unproductive;
+async function lookup(){
+  const cowId=document.getElementById('cowId').value.trim();
 
-never.innerHTML=d.list
-.filter(x=>x.status==='never')
-.map(x=>`<span class="cow">${x.cow}</span>`)
-.join('');
+  if(!cowId){
+    alert('Enter cow number');
+    return;
+  }
 
-late.innerHTML=d.list
-.filter(x=>x.status==='late')
-.map(x=>`<div>${x.cow} - ${x.months} months</div>`)
-.join('');
-});
+  const res=await fetch('/api/dashboard?cowId='+encodeURIComponent(cowId));
+  const data=await res.json();
+
+  const div=document.getElementById('result');
+
+  div.innerHTML=`
+    <div class="card">
+      <h3>Cow ${data.cowId}</h3>
+      <p><b>In Inventory:</b> ${data.inInventory ? 'YES' : 'NO'}</p>
+
+      <h4>➕ Bees plus</h4>
+      <pre>${JSON.stringify(data.beesPlus,null,2)}</pre>
+
+      <h4>➖ Bees minus</h4>
+      <pre>${JSON.stringify(data.beesMinus,null,2)}</pre>
+
+      <h4>🐄 Kalf merk</h4>
+      <pre>${JSON.stringify(data.kalfMerk,null,2)}</pre>
+
+      <h4>📦 Inventory row</h4>
+      <pre>${JSON.stringify(data.inventory,null,2)}</pre>
+    </div>
+  `;
+}
 </script>
 
 </body>
