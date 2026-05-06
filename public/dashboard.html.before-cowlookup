@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cow Productivity Tracker</title>
+<title>Dashboard</title>
 <style>
 body{font-family:Arial;background:#f4f6f8;padding:16px}
 .card{background:#fff;padding:16px;margin:10px 0;border-radius:10px}
@@ -12,11 +12,10 @@ body{font-family:Arial;background:#f4f6f8;padding:16px}
 .bad{border-left:6px solid red}
 .cow{background:#eee;padding:6px;margin:4px;border-radius:6px;display:inline-block}
 </style>
-<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
-<h2>🐄 Cow Productivity Tracker</h2>
+<h2>🐄 Cow Productivity</h2>
 
 <div class="card good">
 <div id="p" class="num">0</div>Productive

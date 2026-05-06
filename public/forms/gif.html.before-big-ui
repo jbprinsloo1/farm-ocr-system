@@ -2,29 +2,24 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ander</title>
+<title>Gif</title>
 <style>
 body{font-family:Arial;background:#f4f6f8;padding:16px}
 .card{background:white;padding:16px;border-radius:14px}
 input,textarea,button{width:100%;padding:14px;margin:8px 0;font-size:18px}
 button{background:#222;color:white;border:0;border-radius:10px}
 </style>
-<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
 <a href="/">⬅ Home</a>
 
 <div class="card">
-<h2>📝 Ander</h2>
+<h2>🧪 Gif</h2><p>Wat is gelaai en hoeveel?</p>
 
-<input id="date" type="datetime-local">
-<textarea id="wat" placeholder="Wat"></textarea>
-<input id="waar" type="text" placeholder="Waar">
-<input id="hoe" type="text" placeholder="Hoe">
-<input id="wie" type="text" placeholder="Wie">
-<input id="aa" type="text" placeholder="Aa">
-<input id="ab" type="text" placeholder="Ab">
+<input id="date" type="date">
+
+<textarea id="wat" placeholder="Wat is gelaai en hoeveel (bv: Roundup 20L + Atrazine 5L)"></textarea>
 
 <button onclick="save()">Save</button>
 
@@ -32,35 +27,23 @@ button{background:#222;color:white;border:0;border-radius:10px}
 </div>
 
 <script>
-const now = new Date();
-now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-date.value = now.toISOString().slice(0,16);
+date.value = new Date().toISOString().split('T')[0];
 
 async function save(){
   msg.textContent='Saving...';
 
-  const res = await fetch('/api/ander',{
+  const res = await fetch('/api/gif',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       date:date.value,
-      wat:wat.value,
-      waar:waar.value,
-      hoe:hoe.value,
-      wie:wie.value,
-      aa:aa.value,
-      ab:ab.value
+      wat:wat.value
     })
   });
 
   if(res.ok){
     msg.textContent='✅ Saved';
     wat.value='';
-    waar.value='';
-    hoe.value='';
-    wie.value='';
-    aa.value='';
-    ab.value='';
   }else{
     msg.textContent='❌ Error saving';
   }

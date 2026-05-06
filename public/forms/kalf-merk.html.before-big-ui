@@ -9,7 +9,6 @@ body{font-family:Arial;background:#f4f6f8;padding:16px}
 input,select,button{width:100%;padding:14px;margin:8px 0;font-size:18px}
 button{background:#222;color:white;border:0;border-radius:10px}
 </style>
-<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <a href="/">⬅ Home</a>

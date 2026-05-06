@@ -1,0 +1,57 @@
+body{
+  font-family:Arial, sans-serif;
+  background:#f4f6f8;
+  margin:0;
+  padding:18px;
+  font-size:22px;
+}
+h1{font-size:34px;text-align:center}
+h2{font-size:30px}
+h3{font-size:26px}
+.section,.card{
+  background:white;
+  padding:20px;
+  margin:18px 0;
+  border-radius:18px;
+}
+a,button{
+  display:block;
+  width:100%;
+  box-sizing:border-box;
+  text-decoration:none;
+  background:#222;
+  color:white;
+  padding:22px;
+  border-radius:16px;
+  font-size:24px;
+  text-align:center;
+  margin:14px 0;
+  border:0;
+}
+.small{background:#555}
+input,select,textarea{
+  width:100%;
+  box-sizing:border-box;
+  padding:18px;
+  font-size:24px;
+  margin:12px 0;
+  border-radius:14px;
+  border:2px solid #999;
+}
+label{
+  display:block;
+  font-size:24px;
+  margin-top:16px;
+}
+.main-btn{
+  font-size:30px;
+  padding:34px 20px;
+  border-radius:22px;
+}
+.back{
+  background:#777;
+}
+pre{
+  font-size:20px;
+  white-space:pre-wrap;
+}

@@ -12,7 +12,6 @@ body{font-family:Arial;background:#f4f6f8;padding:16px}
 .bad{border-left:6px solid red}
 .cow{background:#eee;padding:6px;margin:4px;border-radius:6px;display:inline-block}
 </style>
-<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 

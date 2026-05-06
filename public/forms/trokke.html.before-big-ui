@@ -2,32 +2,45 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ander</title>
+<title>Trokke</title>
 <style>
 body{font-family:Arial;background:#f4f6f8;padding:16px}
 .card{background:white;padding:16px;border-radius:14px}
-input,textarea,button{width:100%;padding:14px;margin:8px 0;font-size:18px}
+input,select,button{width:100%;padding:14px;margin:8px 0;font-size:18px}
 button{background:#222;color:white;border:0;border-radius:10px}
 </style>
-<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
 <a href="/">⬅ Home</a>
 
 <div class="card">
-<h2>📝 Ander</h2>
+<h2>🚚 Trokke</h2>
 
 <input id="date" type="datetime-local">
-<textarea id="wat" placeholder="Wat"></textarea>
-<input id="waar" type="text" placeholder="Waar">
-<input id="hoe" type="text" placeholder="Hoe">
-<input id="wie" type="text" placeholder="Wie">
-<input id="aa" type="text" placeholder="Aa">
-<input id="ab" type="text" placeholder="Ab">
+<input id="trokNrPlaat" type="text" placeholder="Trok nr plaat">
+<input id="gewig" type="number" placeholder="Gewig / netto gewig">
+<input id="drywerId" type="text" placeholder="Drywer ID">
+<select id="waar">
+<option>Ander</option>
+<option>B1</option>
+<option>B456</option>
+<option>B7</option>
+<option>B8</option>
+<option>B9</option>
+<option>B10</option>
+<option>B12</option>
+<option>B14</option>
+<option>B16</option>
+<option>Jarama</option>
+<option>Kromkuil</option>
+<option>Rietvlei</option>
+<option>Skoolspruit</option>
+<option>Uitkoms</option>
+<option>Verblyden</option>
+</select>
 
 <button onclick="save()">Save</button>
-
 <p id="msg"></p>
 </div>
 
@@ -39,28 +52,24 @@ date.value = now.toISOString().slice(0,16);
 async function save(){
   msg.textContent='Saving...';
 
-  const res = await fetch('/api/ander',{
+  const res = await fetch('/api/trokke',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       date:date.value,
-      wat:wat.value,
-      waar:waar.value,
-      hoe:hoe.value,
-      wie:wie.value,
-      aa:aa.value,
-      ab:ab.value
+      trokNrPlaat:trokNrPlaat.value,
+      gewig:gewig.value,
+      drywerId:drywerId.value,
+      waar:waar.value
     })
   });
 
   if(res.ok){
     msg.textContent='✅ Saved';
-    wat.value='';
+    trokNrPlaat.value='';
+    gewig.value='';
+    drywerId.value='';
     waar.value='';
-    hoe.value='';
-    wie.value='';
-    aa.value='';
-    ab.value='';
   }else{
     msg.textContent='❌ Error saving';
   }
