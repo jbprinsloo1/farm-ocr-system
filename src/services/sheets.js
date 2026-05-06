@@ -280,3 +280,70 @@ async function updateTrokkeSlip(rowNumber, delivered, buyerWeight) {
 }
 
 module.exports.updateTrokkeSlip = updateTrokkeSlip;
+
+async function removeBeesFromInventory(beesNr) {
+  const client = await auth.getClient();
+  const sheets = google.sheets({ version: 'v4', auth: client });
+
+  const inventorySheetName = 'Bees Inventaris';
+
+  const readRes = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `'${inventorySheetName}'!A:Z`
+  });
+
+  const rows = readRes.data.values || [];
+  if (rows.length < 2) return false;
+
+  const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
+  const beesNrCol = headers.findIndex(h =>
+    h === 'bees nr' || h === 'beesnr' || h === 'bees no' || h === 'bees nommer'
+  );
+
+  if (beesNrCol === -1) {
+    throw new Error('Bees nr column not found in Bees Inventaris');
+  }
+
+  const wanted = String(beesNr || '').trim();
+
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
+  const sheet = spreadsheet.data.sheets.find(
+    s => s.properties.title === inventorySheetName
+  );
+
+  if (!sheet) {
+    throw new Error('Bees Inventaris sheet not found');
+  }
+
+  const sheetId = sheet.properties.sheetId;
+
+  for (let i = 1; i < rows.length; i++) {
+    const current = String(rows[i][beesNrCol] || '').trim();
+
+    if (current === wanted) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              deleteDimension: {
+                range: {
+                  sheetId,
+                  dimension: 'ROWS',
+                  startIndex: i,
+                  endIndex: i + 1
+                }
+              }
+            }
+          ]
+        }
+      });
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+module.exports.removeBeesFromInventory = removeBeesFromInventory;

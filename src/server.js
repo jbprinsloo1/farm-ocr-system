@@ -33,7 +33,7 @@ app.use('/api/rainfall', rainfallRoute);
 app.use('/api/senwes-dashboard', senwesDashboardRoute);
 app.use('/api/trokke-slips', trokkeSlipsRoute);
 
-const { saveReen, saveKalfMerk, saveBeesMinus, saveBeesPlus, saveTrokke, saveGif, saveAnder } = require('./services/sheets');
+const { saveReen, saveKalfMerk, saveBeesMinus, removeBeesFromInventory, saveBeesPlus, saveTrokke, saveGif, saveAnder } = require('./services/sheets');
 
 
 
@@ -105,11 +105,24 @@ app.post('/api/bees-minus', async (req, res) => {
   try {
     await saveBeesMinus(req.body);
 
+    let removedFromInventory = false;
+    try {
+      removedFromInventory = await removeBeesFromInventory(req.body.beesNr);
+    } catch (removeErr) {
+      console.error('Bees minus saved, but inventory removal failed:', removeErr);
+    }
+
     await sendTelegram(
-      `🐄 Bees minus\n${req.body.wat} - ${req.body.beesNr}\n${req.body.date}`
+      `🐄 Bees minus\n${req.body.wat} - ${req.body.beesNr}\n${req.body.date}\nInventaris verwyder: ${removedFromInventory ? 'Ja' : 'Nee'}`
     );
 
-    res.json({ success: true });
+    res.json({
+      success: true,
+      removedFromInventory,
+      message: removedFromInventory
+        ? 'Bees minus gestoor en bees uit inventaris verwyder.'
+        : 'Bees minus gestoor, maar bees nr nie in inventaris gevind nie.'
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to save bees minus' });
