@@ -347,3 +347,54 @@ async function removeBeesFromInventory(beesNr) {
 }
 
 module.exports.removeBeesFromInventory = removeBeesFromInventory;
+
+async function addBeesToInventoryIfMissing(beesNr) {
+  const client = await auth.getClient();
+  const sheets = google.sheets({ version: 'v4', auth: client });
+
+  const inventorySheetName = 'Bees Inventaris';
+
+  const readRes = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `'${inventorySheetName}'!A:Z`
+  });
+
+  const rows = readRes.data.values || [];
+  const headers = rows[0] || [];
+
+  const normalizedHeaders = headers.map(h => String(h || '').trim().toLowerCase());
+  let beesNrCol = normalizedHeaders.findIndex(h =>
+    h === 'bees nr' || h === 'beesnr' || h === 'bees no' || h === 'bees nommer'
+  );
+
+  if (beesNrCol === -1) {
+    beesNrCol = 0;
+  }
+
+  const wanted = String(beesNr || '').trim();
+
+  for (let i = 1; i < rows.length; i++) {
+    const current = String(rows[i][beesNrCol] || '').trim();
+
+    if (current === wanted) {
+      return false;
+    }
+  }
+
+  const newRow = new Array(Math.max(headers.length, beesNrCol + 1)).fill('');
+  newRow[beesNrCol] = wanted;
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId,
+    range: `'${inventorySheetName}'!A:Z`,
+    valueInputOption: 'USER_ENTERED',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: {
+      values: [newRow]
+    }
+  });
+
+  return true;
+}
+
+module.exports.addBeesToInventoryIfMissing = addBeesToInventoryIfMissing;
