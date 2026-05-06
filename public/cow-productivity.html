@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cow Productivity Tracker</title>
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:16px}
+.card{background:#fff;padding:16px;margin:10px 0;border-radius:10px}
+.num{font-size:30px;font-weight:bold}
+.good{border-left:6px solid green}
+.mid{border-left:6px solid orange}
+.bad{border-left:6px solid red}
+.cow{background:#eee;padding:6px;margin:4px;border-radius:6px;display:inline-block}
+</style>
+</head>
+<body>
+
+<h2>🐄 Cow Productivity Tracker</h2>
+
+<div class="card good">
+<div id="p" class="num">0</div>Productive
+</div>
+
+<div class="card mid">
+<div id="m" class="num">0</div>Moderate
+</div>
+
+<div class="card bad">
+<div id="u" class="num">0</div>Unproductive
+</div>
+
+<h3>Never calved</h3>
+<div id="never"></div>
+<h3>Late calvers</h3>
+<div id="late"></div>
+
+<script>
+fetch('/api/cow-productivity')
+.then(r=>r.json())
+.then(d=>{
+p.textContent=d.productive;
+m.textContent=d.moderate;
+u.textContent=d.unproductive;
+
+never.innerHTML=d.list
+.filter(x=>x.status==='never')
+.map(x=>`<span class="cow">${x.cow}</span>`)
+.join('');
+
+late.innerHTML=d.list
+.filter(x=>x.status==='late')
+.map(x=>`<div>${x.cow} - ${x.months} months</div>`)
+.join('');
+});
+</script>
+
+</body>
+</html>
