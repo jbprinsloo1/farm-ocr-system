@@ -1,52 +1,63 @@
-cat > ~/farm-ocr-system/src/services/parser.js <<'EOF'
 module.exports = function parseVragData(rawText) {
-  const text = rawText || '';
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const original = rawText || '';
 
-  function clean(v) {
-    return (v || '').replace(/\s+/g, ' ').trim();
+  const text = original
+    .replace(/\r/g, '\n')
+    .replace(/[|]/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
+
+  const lines = text
+    .split(/\n/)
+    .map(l => l.trim())
+    .filter(Boolean);
+
+  function norm(s) {
+    return (s || '')
+      .toLowerCase()
+      .replace(/[^\w\s\/.%:-]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
-  function findValueAfter(labels, maxLookAhead = 5) {
-    if (!Array.isArray(labels)) labels = [labels];
+  function clean(s) {
+    return (s || '').replace(/\s+/g, ' ').trim();
+  }
 
-    for (const label of labels) {
-      const labelClean = label.toLowerCase().replace(':', '').trim();
+  function numberFrom(s) {
+    const m = (s || '').match(/\d{1,4}[.,]\d{1,4}|\d+/);
+    return m ? m[0].replace(',', '.') : '';
+  }
 
-      for (let i = 0; i < lines.length; i++) {
-        const lineClean = lines[i].toLowerCase().replace(':', '').trim();
+  function valueNear(labelWords, opts = {}) {
+    const maxAhead = opts.maxAhead || 4;
+    const valuePattern = opts.valuePattern || /.+/;
+    const skipLabels = opts.skipLabels || [];
 
-        // Value on same line: "Netto massa: 15.234"
-        if (lineClean.includes(labelClean)) {
-          const sameLine = lines[i].replace(new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), '').replace(':', '').trim();
-          if (sameLine) return clean(sameLine);
+    for (let i = 0; i < lines.length; i++) {
+      const n = norm(lines[i]);
 
-          // Value on following lines
-          for (let j = i + 1; j < lines.length && j <= i + maxLookAhead; j++) {
-            if (lines[j]) return clean(lines[j]);
-          }
-        }
+      const hasLabel = labelWords.every(w => n.includes(norm(w)));
+      if (!hasLabel) continue;
+
+      // value on same line after :
+      const afterColon = lines[i].split(':').slice(1).join(':').trim();
+      if (afterColon && valuePattern.test(afterColon)) return clean(afterColon);
+
+      // value on next few lines
+      for (let j = i + 1; j < lines.length && j <= i + maxAhead; j++) {
+        const candidate = clean(lines[j]);
+        const cn = norm(candidate);
+
+        if (skipLabels.some(lbl => cn.includes(norm(lbl)))) continue;
+        if (valuePattern.test(candidate)) return candidate;
       }
     }
 
     return '';
   }
 
-  function findMass() {
-    // IMPORTANT: Netto massa must win before Uitweeg massa
-    const netto =
-      findValueAfter(['Netto massa', 'Netto massa:', 'Netto gewig', 'Netto gewig:'], 6);
-
-    if (netto) return netto.match(/\d+[.,]\d+|\d+/)?.[0] || netto;
-
-    // Only fallback if netto is not found
-    const uitweeg =
-      findValueAfter(['Uitweeg massa', 'Uitweeg massa:'], 6);
-
-    return uitweeg.match(/\d+[.,]\d+|\d+/)?.[0] || uitweeg || '';
-  }
-
-  function findFirst(patterns) {
+  function regexFirst(patterns) {
     for (const p of patterns) {
       const m = text.match(p);
       if (m) return clean(m[1] || m[0]);
@@ -54,35 +65,72 @@ module.exports = function parseVragData(rawText) {
     return '';
   }
 
-  const datum = findFirst([
-    /\b(\d{4}[-/]\d{2}[-/]\d{2})\b/,
-    /\b(\d{2}[-/]\d{2}[-/]\d{4})\b/
+  function findNettoMassa() {
+    // 1. Best case: same line
+    let m = text.match(/netto\s*massa\s*:?\s*(\d{1,4}[.,]\d{1,4})/i);
+    if (m) return m[1].replace(',', '.');
+
+    // 2. Look within 6 lines after Netto massa, but ignore Uitweeg/Inweeg labels
+    for (let i = 0; i < lines.length; i++) {
+      const n = norm(lines[i]);
+
+      if (n.includes('netto') && n.includes('massa')) {
+        for (let j = i; j < lines.length && j <= i + 6; j++) {
+          const ln = norm(lines[j]);
+
+          if (ln.includes('uitweeg massa') || ln.includes('inweeg massa')) continue;
+
+          const val = numberFrom(lines[j]);
+          if (val) return val;
+        }
+      }
+    }
+
+    // 3. Last resort only
+    m = text.match(/gelewer\s*op\s*kontrak\s*:?\s*(\d{1,4}[.,]\d{1,4})/i);
+    if (m) return m[1].replace(',', '.');
+
+    return '';
+  }
+
+  const datum = regexFirst([
+    /\b(\d{4}[\/-]\d{2}[\/-]\d{2})\b/,
+    /\b(\d{2}[\/-]\d{2}[\/-]\d{4})\b/
   ]);
 
-  const tyd = findFirst([
-    /\b(\d{1,2}:\d{2}(?::\d{2})?)\b/
+  const tyd = regexFirst([
+    /uitweeg\s*tyd\s*:?\s*(\d{1,2}:\d{2})/i,
+    /inweeg\s*tyd\s*:?\s*(\d{1,2}:\d{2})/i,
+    /\b(\d{1,2}:\d{2})\b/
   ]);
 
   const produk =
-    findValueAfter(['Produk', 'Produk:', 'Materiaal', 'Materiaal:'], 6);
+    valueNear(['materiaal'], { maxAhead: 3, valuePattern: /[a-zA-Z]{3,}/ }) ||
+    regexFirst([/materiaal\s*:?\s*([A-Z][A-Z ]{2,})/i]);
 
-  const vragBriefNo = findFirst([
-    /\b(A\d{5,})\b/i,
-    /\b(Vrag\s*brief\s*no\.?\s*[:\-]?\s*([A-Z0-9-]+))/i
-  ]).replace(/^Vrag\s*brief\s*no\.?\s*[:\-]?\s*/i, '');
-
-  const vog = findValueAfter(['Vog', 'Vog:', 'Vog %', 'Vog %:'], 4);
-
-  const graad = findValueAfter(['Graad', 'Graad:', 'Grade', 'Grade:'], 4);
-
-  const nettoGewig = findMass();
-
-  const nommerPlaat = findFirst([
-    /\b([A-Z]{2,3}\s?\d{3,4}\s?[A-Z]{0,3})\b/,
-    /\b([A-Z]{1,3}\d{3,4}[A-Z]{1,3})\b/
+  const vragBriefNo = regexFirst([
+    /aflewering\s*no\.?\s*:?\s*([A-Z0-9]+)/i,
+    /\b(A\d{6,})\b/i
   ]);
 
-  const land = findValueAfter(['Land', 'Land:', 'Plaas', 'Plaas:', 'Field', 'Field:'], 5);
+  const vog = numberFrom(
+    valueNear(['vog'], { maxAhead: 3, valuePattern: /\d+[.,]\d+/ })
+  );
+
+  const graad =
+    valueNear(['finale', 'graad'], { maxAhead: 3, valuePattern: /^[A-Z0-9]{1,5}$/i }) ||
+    valueNear(['graad'], { maxAhead: 3, valuePattern: /^[A-Z0-9]{1,5}$/i });
+
+  const nettoGewig = findNettoMassa();
+
+  const nommerPlaat = regexFirst([
+    /v\/reg\s*no\.?\s*:?\s*([A-Z0-9 ]{5,12})/i,
+    /\b([A-Z]{2,3}\s?\d{3,4}\s?[A-Z]{1,3})\b/i
+  ]).replace(/\s+/g, '');
+
+  const land =
+    valueNear(['kommentaar'], { maxAhead: 4 }) ||
+    valueNear(['land'], { maxAhead: 4 });
 
   return {
     datum,
@@ -96,4 +144,3 @@ module.exports = function parseVragData(rawText) {
     land
   };
 };
-EOF
