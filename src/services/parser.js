@@ -1,74 +1,99 @@
+cat > ~/farm-ocr-system/src/services/parser.js <<'EOF'
 module.exports = function parseVragData(rawText) {
-  const lines = rawText.split(/\r?\n/).map(l => l.trim());
+  const text = rawText || '';
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
-  function valueAfter(label) {
-    const i = lines.findIndex(l => l.toLowerCase() === label.toLowerCase());
-    if (i === -1) return '';
-    for (let j = i + 1; j < lines.length; j++) {
-      if (lines[j]) return lines[j];
+  function clean(v) {
+    return (v || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function findValueAfter(labels, maxLookAhead = 5) {
+    if (!Array.isArray(labels)) labels = [labels];
+
+    for (const label of labels) {
+      const labelClean = label.toLowerCase().replace(':', '').trim();
+
+      for (let i = 0; i < lines.length; i++) {
+        const lineClean = lines[i].toLowerCase().replace(':', '').trim();
+
+        // Value on same line: "Netto massa: 15.234"
+        if (lineClean.includes(labelClean)) {
+          const sameLine = lines[i].replace(new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), '').replace(':', '').trim();
+          if (sameLine) return clean(sameLine);
+
+          // Value on following lines
+          for (let j = i + 1; j < lines.length && j <= i + maxLookAhead; j++) {
+            if (lines[j]) return clean(lines[j]);
+          }
+        }
+      }
+    }
+
+    return '';
+  }
+
+  function findMass() {
+    // IMPORTANT: Netto massa must win before Uitweeg massa
+    const netto =
+      findValueAfter(['Netto massa', 'Netto massa:', 'Netto gewig', 'Netto gewig:'], 6);
+
+    if (netto) return netto.match(/\d+[.,]\d+|\d+/)?.[0] || netto;
+
+    // Only fallback if netto is not found
+    const uitweeg =
+      findValueAfter(['Uitweeg massa', 'Uitweeg massa:'], 6);
+
+    return uitweeg.match(/\d+[.,]\d+|\d+/)?.[0] || uitweeg || '';
+  }
+
+  function findFirst(patterns) {
+    for (const p of patterns) {
+      const m = text.match(p);
+      if (m) return clean(m[1] || m[0]);
     }
     return '';
   }
 
-  function valuesAfter(label, count = 5) {
-    const i = lines.findIndex(l => l.toLowerCase() === label.toLowerCase());
-    if (i === -1) return [];
-    const out = [];
-    for (let j = i + 1; j < lines.length && out.length < count; j++) {
-      if (lines[j]) out.push(lines[j]);
-    }
-    return out;
-  }
+  const datum = findFirst([
+    /\b(\d{4}[-/]\d{2}[-/]\d{2})\b/,
+    /\b(\d{2}[-/]\d{2}[-/]\d{4})\b/
+  ]);
 
-  const materiaalVals = valuesAfter('Materiaal:', 4);
-  const afleweringVals = valuesAfter('Aflewering No:', 5);
-  const nettoVals = valuesAfter('Netto massa:', 5);
+  const tyd = findFirst([
+    /\b(\d{1,2}:\d{2}(?::\d{2})?)\b/
+  ]);
 
-  const materiaal =
-    materiaalVals.find(v => /[A-Za-z]/.test(v) && !/^(Datum:|Inweeg massa:|Bruto massa:)/i.test(v)) ||
-    '';
+  const produk =
+    findValueAfter(['Produk', 'Produk:', 'Materiaal', 'Materiaal:'], 6);
 
-  const afleweringNo =
-    afleweringVals.find(v => /^[A-Z]\d{6,}$/i.test(v)) ||
-    afleweringVals.find(v => /^[A-Z0-9]+$/i.test(v) && !/massa/i.test(v)) ||
-    '';
+  const vragBriefNo = findFirst([
+    /\b(A\d{5,})\b/i,
+    /\b(Vrag\s*brief\s*no\.?\s*[:\-]?\s*([A-Z0-9-]+))/i
+  ]).replace(/^Vrag\s*brief\s*no\.?\s*[:\-]?\s*/i, '');
 
-  const nettoNumbers = nettoVals.filter(v => /^\d+\.\d+$/.test(v));
-  const nettoMassa =
-    nettoNumbers.length >= 2 ? nettoNumbers[1] :
-    nettoNumbers.length === 1 ? nettoNumbers[0] : '';
+  const vog = findValueAfter(['Vog', 'Vog:', 'Vog %', 'Vog %:'], 4);
 
-  const voertuigRegs = lines.filter(l => /^[A-Z]{3}\d{3}[A-Z]{2}$/i.test(l));
-  const voertuigReg = voertuigRegs[0] || '';
+  const graad = findValueAfter(['Graad', 'Graad:', 'Grade', 'Grade:'], 4);
 
-  const klantNo = valueAfter('Klant No:');
-  const kommentaar = valueAfter('Kommentaar:');
-  const datum = valueAfter('Datum:');
-  const finaleGraad = valueAfter('Finale Graad:');
-  const tyd = valueAfter('Inweeg tyd:');
+  const nettoGewig = findMass();
 
-  let vog = '';
-  const vogIndex = lines.findIndex(l => l.toLowerCase() === 'vog');
-  if (vogIndex !== -1) {
-    for (let j = vogIndex + 1; j < lines.length; j++) {
-      if (/^\d+\.\d+$/.test(lines[j])) {
-        vog = lines[j];
-        break;
-      }
-    }
-  }
+  const nommerPlaat = findFirst([
+    /\b([A-Z]{2,3}\s?\d{3,4}\s?[A-Z]{0,3})\b/,
+    /\b([A-Z]{1,3}\d{3,4}[A-Z]{1,3})\b/
+  ]);
+
+  const land = findValueAfter(['Land', 'Land:', 'Plaas', 'Plaas:', 'Field', 'Field:'], 5);
 
   return {
-    klantNo,
-    silo: kommentaar,
-    materiaal,
     datum,
     tyd,
-    afleweringNo,
-    nettoMassa,
+    produk,
+    vragBriefNo,
     vog,
-    finaleGraad,
-    voertuigReg,
-    rawText
+    graad,
+    nettoGewig,
+    nommerPlaat,
+    land
   };
 };
+EOF
