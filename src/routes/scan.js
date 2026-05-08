@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const visionService = require('../services/vision');
 const parseVragData = require('../services/parser');
-const saveToSheet = require('../services/sheets');
+const { saveToSheet } = require('../services/sheets');
 
 const router = express.Router();
 
